@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+.code/
+.vscode/
+.opencode/
+.claude/
+.qwencode/
+.kilocode/
+.continue/
