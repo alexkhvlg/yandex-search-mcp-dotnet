@@ -20,16 +20,19 @@ MCP (Model Context Protocol) server for Yandex Search API v2, built with .NET 10
 ## Quick Start
 
 ```bash
-# stdio (default)
-dotnet run -- --api-key <key> --folder-id <id>
+# 1. Set env vars
+setx YANDEX_CLOUD_API_KEY "<your-api-key>"
+setx YANDEX_CLOUD_FOLDER_ID "<your-folder-id>"
 
-# HTTP
-dotnet run -- --api-key <key> --folder-id <id> --transport http --host 0.0.0.0 --port 5883
-start-http.bat            # launcher → start-http.ps1 (0.0.0.0:5883)
+# 2. Clone and run (auto-builds)
+git clone <repo-url>
+cd yandex-search-mcp-dotnet
+start-http.bat                     # HTTP mode on 0.0.0.0:5883
 
-# AOT compile
-dotnet publish -c Release
-./bin/Release/net10.0/win-x64/publish/yandex-search-mcp-dotnet.exe --api-key <key> --folder-id <id>
+# or manually:
+dotnet run -- --api-key <key> --folder-id <id>                       # stdio
+dotnet run -- --api-key <key> --folder-id <id> --transport http --port 5883  # HTTP
+dotnet publish -c Release          # AOT binary
 ```
 
 ## CLI Arguments
