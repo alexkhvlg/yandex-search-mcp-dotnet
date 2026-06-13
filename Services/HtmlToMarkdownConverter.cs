@@ -21,7 +21,10 @@ public static class HtmlToMarkdownConverter
                 case IText text:
                     var t = text.Text;
                     if (sb.Length > 0 && sb[^1] != '\n' && sb[^1] != ' ')
+                    {
                         sb.Append(' ');
+                    }
+
                     sb.Append(t);
                     break;
 
@@ -29,7 +32,9 @@ public static class HtmlToMarkdownConverter
                     var tag = el.LocalName.ToLowerInvariant();
                     var childrenBefore = sb.Length;
                     foreach (var c in el.ChildNodes)
+                    {
                         Walk(c, sb, links, images, indent);
+                    }
 
                     switch (tag)
                     {
@@ -48,13 +53,19 @@ public static class HtmlToMarkdownConverter
                         case "a" when links:
                             var href = el.GetAttribute("href");
                             if (!string.IsNullOrEmpty(href))
+                            {
                                 Wrap(sb, childrenBefore, "[", $"]({href})");
+                            }
+
                             break;
                         case "img" when images:
                             var src = el.GetAttribute("src");
                             var alt = el.GetAttribute("alt") ?? "";
                             if (!string.IsNullOrEmpty(src))
+                            {
                                 Wrap(sb, childrenBefore, $"![{alt}](", $")");
+                            }
+
                             break;
                         case "blockquote":
                             Wrap(sb, childrenBefore, "\n\n> ", "\n\n");
@@ -86,10 +97,22 @@ public static class HtmlToMarkdownConverter
 
     private static bool IsOrderedList(IElement? el)
     {
-        if (el == null) return false;
+        if (el == null)
+        {
+            return false;
+        }
+
         var tag = el.LocalName.ToLowerInvariant();
-        if (tag == "ol") return true;
-        if (tag == "ul") return false;
+        if (tag == "ol")
+        {
+            return true;
+        }
+
+        if (tag == "ul")
+        {
+            return false;
+        }
+
         return IsOrderedList(el.ParentElement);
     }
 }

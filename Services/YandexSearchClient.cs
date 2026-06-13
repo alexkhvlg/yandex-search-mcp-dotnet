@@ -10,7 +10,7 @@ public class YandexSearchClient(HttpClient httpClient, YandexConfig config)
 {
     private const string WebSearchUrl = "https://searchapi.api.cloud.yandex.net/v2/web/search";
 
-    public async Task<string> SearchAsync(string query, string searchRegion, CancellationToken ct)
+    public async Task<string> SearchAsync(string query, string searchRegion, CancellationToken cancellationToken)
     {
         var (searchType, l10n) = searchRegion switch
         {
@@ -41,10 +41,10 @@ public class YandexSearchClient(HttpClient httpClient, YandexConfig config)
         httpRequest.Content = new ByteArrayContent(jsonBytes);
         httpRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-        using var response = await httpClient.SendAsync(httpRequest, ct);
+        using var response = await httpClient.SendAsync(httpRequest, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var responseBytes = await response.Content.ReadAsByteArrayAsync(ct);
+        var responseBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         var apiResponse = JsonSerializer.Deserialize(responseBytes, SearchJsonContext.Default.WebSearchApiResponse)!;
         var decodedBytes = Convert.FromBase64String(apiResponse.RawData);
         return Encoding.UTF8.GetString(decodedBytes);

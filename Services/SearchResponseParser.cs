@@ -46,11 +46,15 @@ public static class SearchResponseParser
         while (reader.Read() && !(reader.NodeType == XmlNodeType.EndElement && reader.LocalName == "doc" && reader.Depth == depth))
         {
             if (reader.NodeType != XmlNodeType.Element)
+            {
                 continue;
+            }
 
             var name = reader.LocalName;
             if (!contentTags.Contains(name) || reader.IsEmptyElement)
+            {
                 continue;
+            }
 
             var content = reader.ReadInnerXml();
             switch (name)

@@ -20,16 +20,22 @@ public class FetchWithRegexTool(WebPageFetcher fetcher)
         [Description("Whether to include image references in the markdown output (default: false)")] bool include_images = false,
         [Description("Request timeout in seconds (default: 10)")] int timeout = 10,
         [Description("Maximum number of characters to return in the combined matches output (default: 512)")] int limit = 512,
-        CancellationToken ct = default)
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(url))
+        {
             return "# URL Validation Error\n\n**URL:** (empty)\n**Error:** URL parameter is required";
+        }
 
         if (!Uri.TryCreate(url, UriKind.Absolute, out _))
+        {
             return $"# URL Validation Error\n\n**URL:** {url}\n**Error:** Invalid URL format";
+        }
 
         if (string.IsNullOrWhiteSpace(regex))
+        {
             return $"# Regex Error\n\n**Pattern:** (empty)\n**Error:** Regex parameter is required";
+        }
 
         Regex compiled;
         try
@@ -43,10 +49,12 @@ public class FetchWithRegexTool(WebPageFetcher fetcher)
 
         timeout = Math.Clamp(timeout, 5, 30);
 
-        var result = await fetcher.FetchAsync(url, include_links, include_images, timeout, ct);
+        var result = await fetcher.FetchAsync(url, include_links, include_images, timeout, cancellationToken);
 
         if (!result.Success)
+        {
             return $"# Fetch Error\n\n**URL:** {result.Url}\n**Error:** {result.Error}";
+        }
 
         var matches = compiled.Matches(result.Markdown);
         var lines = matches.Select(m =>
@@ -56,10 +64,17 @@ public class FetchWithRegexTool(WebPageFetcher fetcher)
             {
                 var groups = new List<string>();
                 for (int i = 1; i < m.Groups.Count; i++)
+                {
                     if (m.Groups[i].Success && !string.IsNullOrEmpty(m.Groups[i].Value))
+                    {
                         groups.Add(m.Groups[i].Value);
+                    }
+                }
+
                 if (groups.Count > 0)
+                {
                     return string.Join("", groups);
+                }
             }
             return val;
         }).ToList();

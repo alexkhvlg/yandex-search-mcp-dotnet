@@ -18,28 +18,38 @@ public class FetchTool(WebPageFetcher fetcher)
         [Description("Request timeout in seconds (default: 10)")] int timeout = 10,
         [Description("Character offset to start returning content from (default: 0)")] int offset = 0,
         [Description("Maximum number of characters to return from the content (default: 512)")] int limit = 512,
-        CancellationToken ct = default)
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(url))
+        {
             return "# URL Validation Error\n\n**URL:** (empty)\n**Error:** URL parameter is required";
+        }
 
         if (!Uri.TryCreate(url, UriKind.Absolute, out _))
+        {
             return $"# URL Validation Error\n\n**URL:** {url}\n**Error:** Invalid URL format";
+        }
 
         timeout = Math.Clamp(timeout, 5, 30);
 
-        var result = await fetcher.FetchAsync(url, include_links, include_images, timeout, ct);
+        var result = await fetcher.FetchAsync(url, include_links, include_images, timeout, cancellationToken);
 
         if (!result.Success)
+        {
             return $"# Fetch Error\n\n**URL:** {result.Url}\n**Error:** {result.Error}";
+        }
 
         var sliced = result.Markdown;
         if (offset > 0 || sliced.Length > limit)
         {
             if (offset >= sliced.Length)
+            {
                 sliced = "";
+            }
             else
+            {
                 sliced = sliced[offset..Math.Min(offset + limit, sliced.Length)];
+            }
         }
 
         var response = new FetchResponse(

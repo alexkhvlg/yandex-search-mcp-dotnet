@@ -15,10 +15,14 @@ public static partial class ContentExtractor
     public static (string? Content, string? ContentKind) PickBestContent(SearchResponseParser.XmlDocFields fields)
     {
         if (!string.IsNullOrEmpty(fields.Headline))
+        {
             return (StripHighlightTags(fields.Headline), "headline");
+        }
 
         if (!string.IsNullOrEmpty(fields.Title))
+        {
             return (StripHighlightTags(fields.Title), "title");
+        }
 
         if (fields.Passages.Count > 0)
         {
@@ -29,7 +33,9 @@ public static partial class ContentExtractor
         }
 
         if (!string.IsNullOrEmpty(fields.ExtendedText))
+        {
             return (StripHighlightTags(fields.ExtendedText), "extended-text");
+        }
 
         return (null, null);
     }

@@ -7,7 +7,7 @@ using AngleSharp.Html.Parser;
 
 namespace yandex_search_mcp_dotnet.Services;
 
-public class WebPageFetcher
+public partial class WebPageFetcher
 {
     private static DateTime _lastRequestTime = DateTime.MinValue;
     private static readonly object _rateLock = new();
@@ -41,31 +41,36 @@ public class WebPageFetcher
         _proxyUrl = proxyUrl;
     }
 
-    public async Task<FetchResult> FetchAsync(
-        string url, bool includeLinks, bool includeImages, int timeoutSec, CancellationToken ct)
+    public async Task<FetchResult> FetchAsync(string url, bool includeLinks, bool includeImages, int timeoutSec, CancellationToken cancellationToken)
     {
         RateLimit();
 
-        var result = await TryFetch(url, timeoutSec, includeLinks, includeImages, false, ct);
+        var result = await TryFetch(url, timeoutSec, includeLinks, includeImages, false, cancellationToken);
         if (result.Success)
+        {
             return result;
+        }
 
         if (_proxyUrl is null)
+        {
             return result;
+        }
 
         RateLimit();
-        var proxyResult = await TryFetch(url, timeoutSec, includeLinks, includeImages, true, ct);
+        var proxyResult = await TryFetch(url, timeoutSec, includeLinks, includeImages, true, cancellationToken);
         if (proxyResult.Success)
+        {
             return proxyResult;
+        }
 
         return new FetchResult { Success = false, Url = url, Error = "Both direct and proxy requests failed" };
     }
 
-    private async Task<FetchResult> TryFetch(string url, int timeoutSec, bool includeLinks, bool includeImages, bool useProxy, CancellationToken ct)
+    private async Task<FetchResult> TryFetch(string url, int timeoutSec, bool includeLinks, bool includeImages, bool useProxy, CancellationToken cancellationToken)
     {
         try
         {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(timeoutSec));
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -91,7 +96,7 @@ public class WebPageFetcher
 
             response.EnsureSuccessStatusCode();
 
-            var htmlBytes = await response.Content.ReadAsByteArrayAsync(ct);
+            var htmlBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
             var charSet = response.Content.Headers.ContentType?.CharSet;
             Encoding encoding;
             try
@@ -133,8 +138,7 @@ public class WebPageFetcher
         }
     }
 
-    private static (string Title, string Text) ParseAndConvert(
-        string html, string finalUrl, bool includeLinks, bool includeImages)
+    private static (string Title, string Text) ParseAndConvert(string html, string finalUrl, bool includeLinks, bool includeImages)
     {
         var parser = new HtmlParser();
         using var doc = parser.ParseDocument(html);
@@ -144,14 +148,19 @@ public class WebPageFetcher
         foreach (var selector in UnwantedSelectors)
         {
             foreach (var el in doc.QuerySelectorAll(selector))
+            {
                 el.Remove();
+            }
         }
 
         IElement? mainContent = null;
         foreach (var selector in MainSelectors)
         {
             mainContent = doc.QuerySelector(selector);
-            if (mainContent is not null) break;
+            if (mainContent is not null)
+            {
+                break;
+            }
         }
 
         if (mainContent is null)
@@ -160,7 +169,9 @@ public class WebPageFetcher
             if (mainContent is not null)
             {
                 foreach (var el in mainContent.QuerySelectorAll("header, nav, footer, aside"))
+                {
                     el.Remove();
+                }
             }
         }
 
@@ -176,7 +187,9 @@ public class WebPageFetcher
                         || (includeImages && el.LocalName == "img" && name is "src" or "alt")
                         || name is "title";
                 if (!keep)
+                {
                     el.RemoveAttribute(name);
+                }
             }
         }
 
@@ -195,21 +208,11 @@ public class WebPageFetcher
             var elapsed = DateTime.UtcNow - _lastRequestTime;
             var minInterval = TimeSpan.FromSeconds(1);
             if (elapsed < minInterval)
+            {
                 Thread.Sleep(minInterval - elapsed);
+            }
+
             _lastRequestTime = DateTime.UtcNow;
         }
-    }
-
-    public class FetchResult
-    {
-        public bool Success { get; init; }
-        public string Url { get; init; } = "";
-        public string FinalUrl { get; init; } = "";
-        public string Title { get; init; } = "";
-        public int StatusCode { get; init; }
-        public string ContentType { get; init; } = "";
-        public int ContentLength { get; init; }
-        public string Markdown { get; init; } = "";
-        public string? Error { get; init; }
     }
 }

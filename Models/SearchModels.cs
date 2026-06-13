@@ -4,8 +4,6 @@ public record DocumentResult(string[] Data, string Source);
 
 public record SearchResponse(DocumentResult[] Responses);
 
-public record YandexConfig(string ApiKey, string FolderId);
-
 public record WebSearchApiRequest(
     WebSearchApiQuery Query,
     string FolderId,
@@ -23,23 +21,3 @@ public record WebSearchApiQuery(
 public record WebSearchApiGroupSpec(int GroupsOnPage);
 
 public record WebSearchApiResponse(string RawData);
-
-public record FetchResponse(
-    string Url,
-    string FinalUrl,
-    string Title,
-    int StatusCode,
-    string ContentType,
-    int ContentLength,
-    string Markdown);
-
-public record FetchWithRegexResponse(
-    string Url,
-    string FinalUrl,
-    string Title,
-    int StatusCode,
-    string ContentType,
-    int ContentLength,
-    string RegexPattern,
-    int MatchesFound,
-    string MatchedContent);

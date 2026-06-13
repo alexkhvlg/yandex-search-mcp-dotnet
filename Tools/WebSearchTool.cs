@@ -32,7 +32,9 @@ public class WebSearchTool(YandexSearchClient searchClient)
     {
         var validationError = InputValidator.Validate(query, search_region);
         if (validationError is not null)
+        {
             return validationError;
+        }
 
         var xmlContent = await searchClient.SearchAsync(query, search_region, cancellationToken);
         var docFields = SearchResponseParser.ParseDocuments(xmlContent);
