@@ -58,7 +58,8 @@ dotnet run -- --api-key <key> --folder-id <id> --transport http --port 3001
 │   └── FetchWithRegexTool.cs           # [McpServerToolType] fetch_with_regex — web page → markdown + regex search
 ├── Serialization/
 │   └── SearchJsonContext.cs            # Source-gen JsonSerializerContext (CamelCase, AOT)
-├── start-http.bat                      # Build + run in HTTP mode (0.0.0.0:5883)
+├── start-http.ps1                      # PowerShell: port check, kill old instance, build + run HTTP (0.0.0.0:5883)
+├── start-http.bat                      # Launcher: pwsh -File start-http.ps1
 ```
 
 ## Flow

@@ -25,7 +25,7 @@ dotnet run -- --api-key <key> --folder-id <id>
 
 # HTTP
 dotnet run -- --api-key <key> --folder-id <id> --transport http --host 0.0.0.0 --port 5883
-start-http.bat            # build + run HTTP mode (0.0.0.0:5883)
+start-http.bat            # launcher → start-http.ps1 (0.0.0.0:5883)
 
 # AOT compile
 dotnet publish -c Release
