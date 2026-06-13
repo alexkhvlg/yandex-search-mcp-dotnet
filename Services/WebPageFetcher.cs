@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp;
 using AngleSharp.Dom;
@@ -90,7 +91,18 @@ public class WebPageFetcher
 
             response.EnsureSuccessStatusCode();
 
-            var html = await response.Content.ReadAsStringAsync(ct);
+            var htmlBytes = await response.Content.ReadAsByteArrayAsync(ct);
+            var charSet = response.Content.Headers.ContentType?.CharSet;
+            Encoding encoding;
+            try
+            {
+                encoding = !string.IsNullOrEmpty(charSet) ? Encoding.GetEncoding(charSet) : Encoding.UTF8;
+            }
+            catch
+            {
+                encoding = Encoding.UTF8;
+            }
+            var html = encoding.GetString(htmlBytes);
             var finalUrl = response.RequestMessage?.RequestUri?.ToString() ?? url;
 
             var markdown = ParseAndConvert(html, finalUrl, includeLinks, includeImages);
