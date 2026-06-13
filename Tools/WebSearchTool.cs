@@ -17,17 +17,17 @@ public class WebSearchTool(YandexSearchClient searchClient)
 
         Args:
             query: Required. search query string. Can contain a question and keywords
-            search_region: Required. Search region. Valid values: 'tr' - Turkish region, 'en' - English region
+            search_region: Required. Search region. Valid values: 'ru' - Russian region, 'en' - English region
 
         Returns:
             array of data and source
 
         Note:
-            Default to Turkish localization/region/domain unless query is explicitly non-Turkish.
+            Default to Russian localization/region/domain unless query is explicitly non-Russian.
         """)]
     public async Task<string> WebSearch(
         [Description("Required. search query string. Can contain a question and keywords")] string query,
-        [Description("Required. Search region. Valid values: 'tr' - Turkish region, 'en' - English region")] string search_region,
+        [Description("Required. Search region. Valid values: 'ru' - Russian region, 'en' - English region")] string search_region,
         CancellationToken cancellationToken)
     {
         var validationError = InputValidator.Validate(query, search_region);
