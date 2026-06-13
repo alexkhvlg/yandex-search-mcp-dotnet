@@ -17,7 +17,7 @@ public class WebSearchTool(YandexSearchClient searchClient)
 
         Args:
             query: Required. search query string. Can contain a question and keywords
-            search_region: Required. Search region. Valid values: 'ru' - Russian region, 'en' - English region
+            search_region: Required. Search region. Valid values: 'ru' - Russian, 'en' - English, 'tr' - Turkish, 'be' - Belarusian, 'kk' - Kazakh, 'uz' - Uzbek, 'uk' - Ukrainian
 
         Returns:
             array of data and source
@@ -27,7 +27,7 @@ public class WebSearchTool(YandexSearchClient searchClient)
         """)]
     public async Task<string> WebSearch(
         [Description("Required. search query string. Can contain a question and keywords")] string query,
-        [Description("Required. Search region. Valid values: 'ru' - Russian region, 'en' - English region")] string search_region,
+        [Description("Required. Search region. Valid values: 'ru' - Russian, 'en' - English, 'tr' - Turkish, 'be' - Belarusian, 'kk' - Kazakh, 'uz' - Uzbek, 'uk' - Ukrainian")] string search_region,
         CancellationToken cancellationToken)
     {
         var validationError = InputValidator.Validate(query, search_region);

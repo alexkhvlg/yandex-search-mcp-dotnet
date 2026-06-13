@@ -12,17 +12,26 @@ public class YandexSearchClient(HttpClient httpClient, YandexConfig config)
 
     public async Task<string> SearchAsync(string query, string searchRegion, CancellationToken ct)
     {
-        var isTr = searchRegion == "tr";
+        var (searchType, l10n) = searchRegion switch
+        {
+            "ru" => ("SEARCH_TYPE_RU", "LOCALIZATION_RU"),
+            "tr" => ("SEARCH_TYPE_TR", "LOCALIZATION_TR"),
+            "be" => ("SEARCH_TYPE_BE", "LOCALIZATION_BE"),
+            "kk" => ("SEARCH_TYPE_KK", "LOCALIZATION_KK"),
+            "uz" => ("SEARCH_TYPE_UZ", "LOCALIZATION_EN"),
+            "uk" => ("SEARCH_TYPE_COM", "LOCALIZATION_UK"),
+            _ => ("SEARCH_TYPE_COM", "LOCALIZATION_EN"),
+        };
 
         var request = new WebSearchApiRequest(
             new WebSearchApiQuery(
-                isTr ? "SEARCH_TYPE_TR" : "SEARCH_TYPE_COM",
+                searchType,
                 query,
                 "FAMILY_MODE_NONE",
                 "FIX_TYPO_MODE_OFF"),
             config.FolderId,
             new WebSearchApiGroupSpec(4),
-            isTr ? "LOCALIZATION_TR" : "LOCALIZATION_EN",
+            l10n,
             searchRegion,
             "FORMAT_XML");
 
