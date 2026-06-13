@@ -1,0 +1,53 @@
+using System.ComponentModel;
+using System.Text.Json;
+using ModelContextProtocol.Server;
+using yandex_search_mcp_dotnet.Models;
+using yandex_search_mcp_dotnet.Serialization;
+using yandex_search_mcp_dotnet.Services;
+using yandex_search_mcp_dotnet.Validation;
+
+namespace yandex_search_mcp_dotnet.Tools;
+
+[McpServerToolType]
+public class WebSearchTool(YandexSearchClient searchClient)
+{
+    [McpServerTool(Name = "web_search"),
+     Description("""
+        Use this tool when the user needs to search online and the search query is simple.
+
+        Args:
+            query: Required. search query string. Can contain a question and keywords
+            search_region: Required. Search region. Valid values: 'tr' - Turkish region, 'en' - English region
+
+        Returns:
+            array of data and source
+
+        Note:
+            Default to Turkish localization/region/domain unless query is explicitly non-Turkish.
+        """)]
+    public async Task<string> WebSearch(
+        [Description("Required. search query string. Can contain a question and keywords")] string query,
+        [Description("Required. Search region. Valid values: 'tr' - Turkish region, 'en' - English region")] string search_region,
+        CancellationToken cancellationToken)
+    {
+        var validationError = InputValidator.Validate(query, search_region);
+        if (validationError is not null)
+            return validationError;
+
+        var xmlContent = await searchClient.SearchAsync(query, search_region, cancellationToken);
+        var docFields = SearchResponseParser.ParseDocuments(xmlContent);
+        var results = new List<DocumentResult>();
+
+        foreach (var fields in docFields)
+        {
+            var (content, contentKind) = ContentExtractor.PickBestContent(fields);
+            if (content is not null && contentKind is not null)
+            {
+                results.Add(new DocumentResult([content, contentKind], fields.Url!));
+            }
+        }
+
+        var response = new SearchResponse(results.ToArray());
+        return JsonSerializer.Serialize(response, SearchJsonContext.Default.SearchResponse);
+    }
+}
