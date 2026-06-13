@@ -8,4 +8,6 @@ namespace yandex_search_mcp_dotnet.Serialization;
 [JsonSerializable(typeof(DocumentResult[]))]
 [JsonSerializable(typeof(WebSearchApiRequest))]
 [JsonSerializable(typeof(WebSearchApiResponse))]
+[JsonSerializable(typeof(FetchResponse))]
+[JsonSerializable(typeof(FetchWithRegexResponse))]
 public partial class SearchJsonContext : JsonSerializerContext;

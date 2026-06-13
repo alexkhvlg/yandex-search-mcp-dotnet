@@ -31,6 +31,7 @@ dotnet run -- --api-key <key> --folder-id <id> --transport http --port 3001
 
 | Package | Version | Purpose |
 |---------|---------|---------|
+| `AngleSharp` | 1.5.1 | HTML parsing, CSS selectors, DOM manipulation |
 | `ModelContextProtocol` | 1.4.0 | MCP server SDK (stdio tools, DI) |
 | `ModelContextProtocol.AspNetCore` | 1.4.0 | HTTP transport (Streamable HTTP) |
 | `Microsoft.Extensions.Hosting` | 10.0.9 | Generic host (stdio mode) |
@@ -46,11 +47,15 @@ dotnet run -- --api-key <key> --folder-id <id> --transport http --port 3001
 ├── Services/
 │   ├── YandexSearchClient.cs           # HttpClient → POST Yandex API, base64 decode
 │   ├── SearchResponseParser.cs         # XmlReader → XmlDocFields (url, headline, title, passage, extended-text)
-│   └── ContentExtractor.cs             # [GeneratedRegex] StripHighlightTags + PickBestContent priority ranking
+│   ├── ContentExtractor.cs             # [GeneratedRegex] StripHighlightTags + PickBestContent priority ranking
+│   ├── WebPageFetcher.cs               # HTTP GET → AngleSharp DOM → CSS cleaning → Markdown, rate-limit, proxy fallback
+│   └── HtmlToMarkdownConverter.cs      # Static converter: AngleSharp INode → Markdown (headings, links, images, lists, code)
 ├── Validation/
 │   └── InputValidator.cs               # query + search_region presence check
 ├── Tools/
-│   └── WebSearchTool.cs                # [McpServerToolType] with DI, orchestrates search pipeline
+│   ├── WebSearchTool.cs                # [McpServerToolType] web_search — Yandex Search API
+│   ├── FetchTool.cs                    # [McpServerToolType] fetch — web page → markdown
+│   └── FetchWithRegexTool.cs           # [McpServerToolType] fetch_with_regex — web page → markdown + regex search
 ├── Serialization/
 │   └── SearchJsonContext.cs            # Source-gen JsonSerializerContext (CamelCase, AOT)
 ├── start-http.bat                      # Build + run in HTTP mode (0.0.0.0:5883)
@@ -68,4 +73,11 @@ web_search tool call:
   → SearchResponseParser.ParseDocuments (XmlReader → List<XmlDocFields>)
   → ContentExtractor.PickBestContent (headline > title > passages > extended-text)
   → JsonSerializer.Serialize (source-gen context)
+
+fetch / fetch_with_regex tool call:
+  URL validation → WebPageFetcher.FetchAsync (HTTP GET, User-Agent, rate-limit)
+  → on failure + proxy configured → retry via proxy
+  → AngleSharp HtmlParser → CSS cleanup (unwanted selectors, main content detection)
+  → HtmlToMarkdownConverter.Convert (AngleSharp DOM walk → Markdown)
+  → offset/limit slice or regex search → JsonSerializer.Serialize (source-gen context)
 ```

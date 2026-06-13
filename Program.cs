@@ -15,6 +15,7 @@ var cliConfig = new ConfigurationBuilder()
         ["--transport"] = "Transport",
         ["--host"] = "Host",
         ["--port"] = "Port",
+        ["--proxy-url"] = "ProxyUrl",
     })
     .Build();
 
@@ -23,6 +24,7 @@ var folderId = cliConfig["FolderId"];
 var transport = cliConfig["Transport"] ?? "stdio";
 var host = cliConfig["Host"];
 var rawPort = cliConfig["Port"];
+var proxyUrl = cliConfig["ProxyUrl"];
 
 if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(folderId))
 {
@@ -56,10 +58,14 @@ if (transport == "http")
 
     builder.Services.AddSingleton(config);
     builder.Services.AddHttpClient<YandexSearchClient>();
+    builder.Services.AddSingleton(sp => new WebPageFetcher(
+        sp.GetRequiredService<HttpClient>(), proxyUrl));
 
     builder.Services.AddMcpServer()
         .WithHttpTransport(o => o.Stateless = true)
-        .WithTools<WebSearchTool>();
+        .WithTools<WebSearchTool>()
+        .WithTools<FetchTool>()
+        .WithTools<FetchWithRegexTool>();
 
     builder.Logging.AddConsole(options =>
     {
@@ -77,10 +83,14 @@ var hostBuilder = Host.CreateApplicationBuilder(args);
 
 hostBuilder.Services.AddSingleton(config);
 hostBuilder.Services.AddHttpClient<YandexSearchClient>();
+hostBuilder.Services.AddSingleton(sp => new WebPageFetcher(
+    sp.GetRequiredService<HttpClient>(), proxyUrl));
 
 hostBuilder.Services.AddMcpServer()
     .WithStdioServerTransport()
-    .WithTools<WebSearchTool>();
+    .WithTools<WebSearchTool>()
+    .WithTools<FetchTool>()
+    .WithTools<FetchWithRegexTool>();
 
 hostBuilder.Logging.AddConsole(options =>
 {

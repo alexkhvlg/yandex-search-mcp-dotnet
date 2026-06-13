@@ -5,10 +5,12 @@ MCP (Model Context Protocol) server for Yandex Search API v2, built with .NET 10
 ## Features
 
 - **Web search** via Yandex Search API v2
+- **Web page fetching** — convert any page to Markdown via `fetch` and `fetch_with_regex`
 - Multi-region support: Turkish (`tr`) and English (`en`)
 - AOT native compilation (`PublishAot=true`)
-- **stdio** transport (default) and **HTTP** (streamable, stateless)
+- **stdio** transport (default) and **HTTP** (streamable, stateless, CORS)
 - `<hlword>` highlight tag stripping (Yandex XML markup cleanup)
+- Proxy fallback for page fetching (`--proxy-url`)
 
 ## Prerequisites
 
@@ -39,6 +41,7 @@ dotnet publish -c Release
 | `--transport` | No | `stdio` | `stdio` or `http` |
 | `--host` | No | `localhost` | Host for HTTP transport |
 | `--port` | No | `3001` | Port for HTTP transport |
+| `--proxy-url` | No | — | Proxy URL for page fetching fallback (e.g., `http://proxy:8080`) |
 
 `--host` and `--port` only valid with `--transport http`.
 
@@ -100,10 +103,41 @@ Performs a web search using Yandex Search API.
 
 `data[0]` — content (headline, title, or passage), `data[1]` — content type.
 
+### `fetch`
+
+Fetches a web page and converts it to Markdown.
+
+**Parameters:**
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `url` | string | Yes | — | URL of the web page |
+| `include_links` | bool | No | `true` | Preserve links in Markdown output |
+| `include_images` | bool | No | `false` | Include image references |
+| `timeout` | int | No | `10` | Request timeout (5–30 sec) |
+| `offset` | int | No | `0` | Character offset for content slice |
+| `limit` | int | No | `512` | Max returned characters |
+
+### `fetch_with_regex`
+
+Fetches a page, converts to Markdown, searches with regex.
+
+**Parameters:**
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `url` | string | Yes | — | URL of the web page |
+| `regex` | string | Yes | — | Regex pattern (case-insensitive, singleline) |
+| `include_links` | bool | No | `true` | Preserve links in Markdown output |
+| `include_images` | bool | No | `false` | Include image references |
+| `timeout` | int | No | `10` | Request timeout (5–30 sec) |
+| `limit` | int | No | `512` | Max returned characters |
+
 ## Dependencies
 
 | Package | Version |
 |---------|---------|
+| `AngleSharp` | 1.5.1 |
 | `ModelContextProtocol` | 1.4.0 |
 | `ModelContextProtocol.AspNetCore` | 1.4.0 |
 | `Microsoft.Extensions.Hosting` | 10.0.9 |

@@ -23,3 +23,23 @@ public record WebSearchApiQuery(
 public record WebSearchApiGroupSpec(int GroupsOnPage);
 
 public record WebSearchApiResponse(string RawData);
+
+public record FetchResponse(
+    string Url,
+    string FinalUrl,
+    string Title,
+    int StatusCode,
+    string ContentType,
+    int ContentLength,
+    string Markdown);
+
+public record FetchWithRegexResponse(
+    string Url,
+    string FinalUrl,
+    string Title,
+    int StatusCode,
+    string ContentType,
+    int ContentLength,
+    string RegexPattern,
+    int MatchesFound,
+    string MatchedContent);
