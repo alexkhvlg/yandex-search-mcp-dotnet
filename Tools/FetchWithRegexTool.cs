@@ -9,7 +9,7 @@ using yandex_search_mcp_dotnet.Services;
 namespace yandex_search_mcp_dotnet.Tools;
 
 [McpServerToolType]
-public class FetchWithRegexTool(WebPageFetcher fetcher)
+public class FetchWithRegexTool(WebPageFetcher fetcher, LogFileWriter logger)
 {
     [McpServerTool(Name = "fetch_with_regex"),
      Description("Fetch a web page, convert it to markdown format and then search for regex matches across the entire content. Returns page metadata and only the matching lines.")]
@@ -24,17 +24,23 @@ public class FetchWithRegexTool(WebPageFetcher fetcher)
     {
         if (string.IsNullOrWhiteSpace(url))
         {
-            return "# URL Validation Error\n\n**URL:** (empty)\n**Error:** URL parameter is required";
+            var emptyUrlError = "# URL Validation Error\n\n**URL:** (empty)\n**Error:** URL parameter is required";
+            logger.Write("FetchWithRegexTool", "(empty)", null, "URL parameter is required");
+            return emptyUrlError;
         }
 
         if (!Uri.TryCreate(url, UriKind.Absolute, out _))
         {
-            return $"# URL Validation Error\n\n**URL:** {url}\n**Error:** Invalid URL format";
+            var invalidUrlError = $"# URL Validation Error\n\n**URL:** {url}\n**Error:** Invalid URL format";
+            logger.Write("FetchWithRegexTool", url, null, "Invalid URL format");
+            return invalidUrlError;
         }
 
         if (string.IsNullOrWhiteSpace(regex))
         {
-            return $"# Regex Error\n\n**Pattern:** (empty)\n**Error:** Regex parameter is required";
+            var regexError = $"# Regex Error\n\n**Pattern:** (empty)\n**Error:** Regex parameter is required";
+            logger.Write("FetchWithRegexTool", url, null, "Regex parameter is required");
+            return regexError;
         }
 
         Regex compiled;
@@ -44,62 +50,76 @@ public class FetchWithRegexTool(WebPageFetcher fetcher)
         }
         catch (ArgumentException ex)
         {
-            return $"# Regex Error\n\n**Pattern:** {regex}\n**Error:** Invalid regex - {ex.Message}";
+            var invalidRegexError = $"# Regex Error\n\n**Pattern:** {regex}\n**Error:** Invalid regex - {ex.Message}";
+            logger.Write("FetchWithRegexTool", url, null, $"Invalid regex - {ex.Message}");
+            return invalidRegexError;
         }
 
         timeout = Math.Clamp(timeout, 5, 30);
 
-        var result = await fetcher.FetchAsync(url, include_links, include_images, timeout, cancellationToken);
-
-        if (!result.Success)
+        try
         {
-            return $"# Fetch Error\n\n**URL:** {result.Url}\n**Error:** {result.Error}";
-        }
+            var result = await fetcher.FetchAsync(url, include_links, include_images, timeout, cancellationToken);
 
-        var matches = compiled.Matches(result.Markdown);
-        var lines = matches.Select(m =>
-        {
-            var val = m.Value;
-            if (m.Groups.Count > 1)
+            if (!result.Success)
             {
-                var groups = new List<string>();
-                for (int i = 1; i < m.Groups.Count; i++)
+                var fetchError = $"# Fetch Error\n\n**URL:** {result.Url}\n**Error:** {result.Error}";
+                logger.Write("FetchWithRegexTool", url, null, result.Error ?? "Unknown error");
+                return fetchError;
+            }
+
+            var matches = compiled.Matches(result.Markdown);
+            var lines = matches.Select(m =>
+            {
+                var val = m.Value;
+                if (m.Groups.Count > 1)
                 {
-                    if (m.Groups[i].Success && !string.IsNullOrEmpty(m.Groups[i].Value))
+                    var groups = new List<string>();
+                    for (int i = 1; i < m.Groups.Count; i++)
                     {
-                        groups.Add(m.Groups[i].Value);
+                        if (m.Groups[i].Success && !string.IsNullOrEmpty(m.Groups[i].Value))
+                        {
+                            groups.Add(m.Groups[i].Value);
+                        }
+                    }
+
+                    if (groups.Count > 0)
+                    {
+                        return string.Join("", groups);
                     }
                 }
+                return val;
+            }).ToList();
 
-                if (groups.Count > 0)
-                {
-                    return string.Join("", groups);
-                }
+            var combined = string.Join("\n", lines);
+            if (combined.Length > limit)
+            {
+                var lastNewline = combined.LastIndexOf('\n', Math.Min(limit, combined.Length) - 1);
+                combined = lastNewline > limit * 0.5
+                    ? combined[..lastNewline]
+                    : combined[..limit];
+                combined += "\n\n...(truncated, limit exceeded)";
             }
-            return val;
-        }).ToList();
 
-        var combined = string.Join("\n", lines);
-        if (combined.Length > limit)
-        {
-            var lastNewline = combined.LastIndexOf('\n', Math.Min(limit, combined.Length) - 1);
-            combined = lastNewline > limit * 0.5
-                ? combined[..lastNewline]
-                : combined[..limit];
-            combined += "\n\n...(truncated, limit exceeded)";
+            var response = new FetchWithRegexResponse(
+                result.Url,
+                result.FinalUrl,
+                result.Title,
+                result.StatusCode,
+                result.ContentType,
+                result.ContentLength,
+                regex,
+                lines.Count,
+                combined);
+
+            var json = JsonSerializer.Serialize(response, SearchJsonContext.Default.FetchWithRegexResponse);
+            logger.Write("FetchWithRegexTool", url, json, null);
+            return json;
         }
-
-        var response = new FetchWithRegexResponse(
-            result.Url,
-            result.FinalUrl,
-            result.Title,
-            result.StatusCode,
-            result.ContentType,
-            result.ContentLength,
-            regex,
-            lines.Count,
-            combined);
-
-        return JsonSerializer.Serialize(response, SearchJsonContext.Default.FetchWithRegexResponse);
+        catch (Exception ex)
+        {
+            logger.Write("FetchWithRegexTool", url, null, ex.Message);
+            throw;
+        }
     }
 }

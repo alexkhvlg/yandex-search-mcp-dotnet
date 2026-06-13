@@ -49,7 +49,8 @@ dotnet run -- --api-key <key> --folder-id <id> --transport http --port 3001
 │   ├── SearchResponseParser.cs         # XmlReader → XmlDocFields (url, headline, title, passage, extended-text)
 │   ├── ContentExtractor.cs             # [GeneratedRegex] StripHighlightTags + PickBestContent priority ranking
 │   ├── WebPageFetcher.cs               # HTTP GET → AngleSharp DOM → CSS cleaning → Markdown, rate-limit, proxy fallback
-│   └── HtmlToMarkdownConverter.cs      # Static converter: AngleSharp INode → Markdown (headings, links, images, lists, code)
+│   ├── HtmlToMarkdownConverter.cs      # Static converter: AngleSharp INode → Markdown (headings, links, images, lists, code)
+│   └── LogFileWriter.cs                # File logger: logs/yyyy-MM-dd.log next to exe, thread-safe, AOT-safe
 ├── Validation/
 │   └── InputValidator.cs               # query + search_region presence check
 ├── Tools/
@@ -81,4 +82,7 @@ fetch / fetch_with_regex tool call:
   → AngleSharp HtmlParser → CSS cleanup (unwanted selectors, main content detection)
   → HtmlToMarkdownConverter.Convert (AngleSharp DOM walk → Markdown)
   → offset/limit slice or regex search → JsonSerializer.Serialize (source-gen context)
+
+All tools: LogFileWriter.Write logs each call (success: first 50 chars of result; error: message)
+  to logs/yyyy-MM-dd.log in the executable directory.
 ```

@@ -146,6 +146,15 @@ Fetches a page, converts to Markdown, searches with regex.
 | `Microsoft.Extensions.Hosting` | 10.0.9 |
 | `Microsoft.Extensions.Http` | 10.0.4 |
 
+## Logging
+
+All tool calls are logged to `logs/yyyy-MM-dd.log` in the executable directory. Format:
+
+```
+[YYYY-MM-DD hh:mm:ss] ToolName: query|url. Result: <first 50 chars of JSON>
+[YYYY-MM-DD hh:mm:ss] ToolName: query|url. Error: <error message>
+```
+
 ## License
 
 Apache License 2.0

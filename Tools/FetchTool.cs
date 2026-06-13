@@ -8,7 +8,7 @@ using yandex_search_mcp_dotnet.Services;
 namespace yandex_search_mcp_dotnet.Tools;
 
 [McpServerToolType]
-public class FetchTool(WebPageFetcher fetcher)
+public class FetchTool(WebPageFetcher fetcher, LogFileWriter logger)
 {
     [McpServerTool(Name = "fetch"), Description("Fetch a web page and convert it to markdown format")]
     public async Task<string> Fetch(
@@ -22,45 +22,61 @@ public class FetchTool(WebPageFetcher fetcher)
     {
         if (string.IsNullOrWhiteSpace(url))
         {
-            return "# URL Validation Error\n\n**URL:** (empty)\n**Error:** URL parameter is required";
+            var emptyUrlError = "# URL Validation Error\n\n**URL:** (empty)\n**Error:** URL parameter is required";
+            logger.Write("FetchTool", "(empty)", null, "URL parameter is required");
+            return emptyUrlError;
         }
 
         if (!Uri.TryCreate(url, UriKind.Absolute, out _))
         {
-            return $"# URL Validation Error\n\n**URL:** {url}\n**Error:** Invalid URL format";
+            var invalidUrlError = $"# URL Validation Error\n\n**URL:** {url}\n**Error:** Invalid URL format";
+            logger.Write("FetchTool", url, null, "Invalid URL format");
+            return invalidUrlError;
         }
 
         timeout = Math.Clamp(timeout, 5, 30);
 
-        var result = await fetcher.FetchAsync(url, include_links, include_images, timeout, cancellationToken);
-
-        if (!result.Success)
+        try
         {
-            return $"# Fetch Error\n\n**URL:** {result.Url}\n**Error:** {result.Error}";
-        }
+            var result = await fetcher.FetchAsync(url, include_links, include_images, timeout, cancellationToken);
 
-        var sliced = result.Markdown;
-        if (offset > 0 || sliced.Length > limit)
+            if (!result.Success)
+            {
+                var fetchError = $"# Fetch Error\n\n**URL:** {result.Url}\n**Error:** {result.Error}";
+                logger.Write("FetchTool", url, null, result.Error ?? "Unknown error");
+                return fetchError;
+            }
+
+            var sliced = result.Markdown;
+            if (offset > 0 || sliced.Length > limit)
+            {
+                if (offset >= sliced.Length)
+                {
+                    sliced = "";
+                }
+                else
+                {
+                    sliced = sliced[offset..Math.Min(offset + limit, sliced.Length)];
+                }
+            }
+
+            var response = new FetchResponse(
+                result.Url,
+                result.FinalUrl,
+                result.Title,
+                result.StatusCode,
+                result.ContentType,
+                result.ContentLength,
+                sliced);
+
+            var json = JsonSerializer.Serialize(response, SearchJsonContext.Default.FetchResponse);
+            logger.Write("FetchTool", url, json, null);
+            return json;
+        }
+        catch (Exception ex)
         {
-            if (offset >= sliced.Length)
-            {
-                sliced = "";
-            }
-            else
-            {
-                sliced = sliced[offset..Math.Min(offset + limit, sliced.Length)];
-            }
+            logger.Write("FetchTool", url, null, ex.Message);
+            throw;
         }
-
-        var response = new FetchResponse(
-            result.Url,
-            result.FinalUrl,
-            result.Title,
-            result.StatusCode,
-            result.ContentType,
-            result.ContentLength,
-            sliced);
-
-        return JsonSerializer.Serialize(response, SearchJsonContext.Default.FetchResponse);
     }
 }

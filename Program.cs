@@ -57,6 +57,7 @@ if (transport == "http")
     });
 
     builder.Services.AddSingleton(config);
+    builder.Services.AddSingleton<LogFileWriter>();
     builder.Services.AddHttpClient<YandexSearchClient>();
     builder.Services.AddSingleton(sp => new WebPageFetcher(
         sp.GetRequiredService<HttpClient>(), proxyUrl));
@@ -82,6 +83,7 @@ if (transport == "http")
 var hostBuilder = Host.CreateApplicationBuilder(args);
 
 hostBuilder.Services.AddSingleton(config);
+hostBuilder.Services.AddSingleton<LogFileWriter>();
 hostBuilder.Services.AddHttpClient<YandexSearchClient>();
 hostBuilder.Services.AddSingleton(sp => new WebPageFetcher(
     sp.GetRequiredService<HttpClient>(), proxyUrl));
