@@ -27,4 +27,6 @@ if ($conn) {
 }
 
 Write-Host "Building and starting on http://${HostIP}:$Port"
-dotnet run -c Release -- --api-key $apiKey --folder-id $folderId --transport http --host $HostIP --port $Port
+dotnet build -c Release --no-incremental
+dotnet run -c Release --no-build -- --api-key $apiKey --folder-id $folderId --transport http --host $HostIP --port $Port
+pause

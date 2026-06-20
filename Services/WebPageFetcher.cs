@@ -32,6 +32,43 @@ public partial class WebPageFetcher
         ".container .content", ".page-content", ".single-content"
     ];
 
+    private static readonly string[] GeoRestrictionPatterns =
+    [
+        "forbidden",
+        "only available in certain regions",
+        "access denied",
+        "You don't have permission to access",
+        "not available in your region",
+        "Could not load this space",
+        "not available in your country",
+        "this content is not available",
+        "unavailable in your region",
+        "geo-restricted",
+        "this site is blocked",
+        "access from your location has been restricted",
+        "service is not available in your country",
+        "unavailable due to legal restrictions",
+        "content unavailable",
+        "not accessible from your location",
+        "blocked in your region",
+        "sorry, this content is not available",
+        "not allowed in your region",
+        "restricted access",
+        "this page isn't available in your country",
+        "451 Unavailable For Legal Reasons",
+        "access to this page has been denied",
+        "you are not authorized to access",
+        "не поддерживается в вашей стране",
+        "недоступно в вашем регионе",
+        "доступ запрещен",
+        "контент недоступен",
+        "заблокировано",
+        "недоступен в вашей стране",
+        "ограничен доступ",
+        "страница недоступна",
+        "сервис недоступен"
+    ];
+
     private const string UserAgent =
         "Mozilla/5.0 (compatible; MCP-Fetch-As-Markdown/1.0; +https://github.com/modelcontextprotocol/fetch-as-markdown)";
 
@@ -48,6 +85,15 @@ public partial class WebPageFetcher
         var result = await TryFetch(url, timeoutSec, includeLinks, includeImages, false, cancellationToken);
         if (result.Success)
         {
+            if (IsGeoRestricted(result.Title, result.Markdown) && _proxyUrl is not null)
+            {
+                RateLimit();
+                var geoProxyResult = await TryFetch(url, timeoutSec, includeLinks, includeImages, true, cancellationToken);
+                if (geoProxyResult.Success && !IsGeoRestricted(geoProxyResult.Title, geoProxyResult.Markdown))
+                {
+                    return geoProxyResult;
+                }
+            }
             return result;
         }
 
@@ -214,5 +260,16 @@ public partial class WebPageFetcher
 
             _lastRequestTime = DateTime.UtcNow;
         }
+    }
+
+    private static bool IsGeoRestricted(string title, string markdown)
+    {
+        var text = title + " " + markdown;
+        foreach (var pattern in GeoRestrictionPatterns)
+        {
+            if (text.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 }
